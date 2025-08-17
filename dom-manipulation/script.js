@@ -30,6 +30,7 @@ let quotes = loadQuotes();
 const quoteDisplay = document.getElementById('quoteDisplay');
 const newQuoteButton = document.getElementById('newQuote');
 const exportQuotesButton = document.getElementById('exportQuotes');
+const importFileInput = document.getElementById('importFile');
 
 // Function to show a random quote
 function showRandomQuote() {
@@ -869,6 +870,35 @@ document.addEventListener('DOMContentLoaded', function() {
         this.style.backgroundColor = '#007bff';
         this.style.transform = 'translateY(0)';
         this.style.boxShadow = '0 4px 15px rgba(0,0,0,0.2)';
+    });
+    
+    // Style the import file input
+    importFileInput.style.cssText = `
+        background: #ffffff;
+        color: #333;
+        padding: 12px;
+        border: 2px solid #6f42c1;
+        border-radius: 6px;
+        font-size: 1em;
+        font-weight: 500;
+        cursor: pointer;
+        display: block;
+        margin: 20px auto;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        max-width: 300px;
+    `;
+    
+    importFileInput.addEventListener('mouseenter', function() {
+        this.style.borderColor = '#5a32a3';
+        this.style.transform = 'translateY(-2px)';
+        this.style.boxShadow = '0 6px 20px rgba(0,0,0,0.15)';
+    });
+    
+    importFileInput.addEventListener('mouseleave', function() {
+        this.style.borderColor = '#6f42c1';
+        this.style.transform = 'translateY(0)';
+        this.style.boxShadow = '0 4px 15px rgba(0,0,0,0.1)';
     });
 });
 
