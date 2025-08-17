@@ -471,6 +471,78 @@ function importFromJsonFile(event) {
     fileReader.readAsText(file);
 }
 
+// Function to fetch quotes from server (simulated)
+function fetchQuotesFromServer() {
+    return new Promise((resolve, reject) => {
+        // Simulate network delay
+        setTimeout(() => {
+            try {
+                // Simulate server response with additional quotes
+                const serverQuotes = [
+                    { text: "The only way to make sense out of change is to plunge into it, move with it, and join the dance.", category: "Change" },
+                    { text: "Yesterday is history, tomorrow is a mystery, today is a gift of God, which is why we call it the present.", category: "Present" },
+                    { text: "The mind is everything. What you think you become.", category: "Mindset" },
+                    { text: "Whether you think you can or you think you can't, you're right.", category: "Belief" },
+                    { text: "The best revenge is massive success.", category: "Success" },
+                    { text: "Life is 10% what happens to you and 90% how you react to it.", category: "Attitude" },
+                    { text: "Don't be afraid to give up the good to go for the great.", category: "Excellence" }
+                ];
+                
+                showSuccessMessage('Successfully fetched quotes from server!');
+                resolve(serverQuotes);
+            } catch (error) {
+                reject(new Error('Failed to fetch quotes from server'));
+            }
+        }, 1500); // Simulate 1.5 second network delay
+    });
+}
+
+// Function to sync quotes with server (fetch and merge)
+async function syncQuotesWithServer() {
+    try {
+        showSuccessMessage('Syncing with server...');
+        
+        const serverQuotes = await fetchQuotesFromServer();
+        
+        // Get current quotes count before sync
+        const initialCount = quotes.length;
+        
+        // Filter out quotes that already exist (avoid duplicates)
+        const newQuotes = serverQuotes.filter(serverQuote => 
+            !quotes.some(existingQuote => 
+                existingQuote.text === serverQuote.text && 
+                existingQuote.category === serverQuote.category
+            )
+        );
+        
+        if (newQuotes.length > 0) {
+            // Add new quotes from server
+            quotes.push(...newQuotes);
+            saveQuotes();
+            
+            // Update categories dropdown
+            populateCategories();
+            
+            // Update UI buttons
+            const showAllBtn = document.querySelector('[data-action="showAll"]');
+            if (showAllBtn) {
+                showAllBtn.textContent = `Show All Quotes (${quotes.length})`;
+            }
+            
+            showSuccessMessage(`Sync complete! Added ${newQuotes.length} new quotes from server.`);
+            
+            // Show a random quote to reflect updates
+            showRandomQuote();
+        } else {
+            showSuccessMessage('Sync complete! No new quotes to add.');
+        }
+        
+    } catch (error) {
+        console.error('Server sync failed:', error);
+        alert('Failed to sync with server. Please try again later.');
+    }
+}
+
 // Enhanced function to export quotes as JSON (for backup)
 // Enhanced function to export quotes as JSON (for backup)
 function exportToJsonFile() {
@@ -763,10 +835,36 @@ function createAdditionalControls() {
         }
     });
     
+    // Sync with server button
+    const syncBtn = document.createElement('button');
+    syncBtn.textContent = 'Sync with Server';
+    syncBtn.style.cssText = `
+        background: #fd7e14;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 1em;
+        font-weight: 500;
+        transition: background-color 0.3s ease;
+    `;
+    
+    syncBtn.addEventListener('mouseenter', function() {
+        this.style.backgroundColor = '#e56707';
+    });
+    
+    syncBtn.addEventListener('mouseleave', function() {
+        this.style.backgroundColor = '#fd7e14';
+    });
+    
+    syncBtn.addEventListener('click', syncQuotesWithServer);
+    
     controlsContainer.appendChild(addQuoteBtn);
     controlsContainer.appendChild(showAllBtn);
     controlsContainer.appendChild(clearBtn);
     controlsContainer.appendChild(importExportBtn);
+    controlsContainer.appendChild(syncBtn);
     
     // Insert after the new quote button
     newQuoteButton.parentNode.insertBefore(controlsContainer, newQuoteButton.nextSibling);
@@ -1052,6 +1150,8 @@ if (typeof module !== 'undefined' && module.exports) {
         populateCategories,
         filterQuotes,
         saveSelectedCategory,
-        loadSelectedCategory
+        loadSelectedCategory,
+        fetchQuotesFromServer,
+        syncQuotesWithServer
     };
 }
