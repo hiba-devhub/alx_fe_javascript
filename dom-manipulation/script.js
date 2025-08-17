@@ -29,6 +29,7 @@ let quotes = loadQuotes();
 // DOM elements
 const quoteDisplay = document.getElementById('quoteDisplay');
 const newQuoteButton = document.getElementById('newQuote');
+const exportQuotesButton = document.getElementById('exportQuotes');
 
 // Function to show a random quote
 function showRandomQuote() {
@@ -782,6 +783,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Set up event listener for the new quote button
     newQuoteButton.addEventListener('click', showRandomQuote);
     
+    // Set up event listener for the export quotes button
+    exportQuotesButton.addEventListener('click', exportToJsonFile);
+    
     // Create additional controls
     createAdditionalControls();
     
@@ -835,6 +839,34 @@ document.addEventListener('DOMContentLoaded', function() {
     
     newQuoteButton.addEventListener('mouseleave', function() {
         this.style.backgroundColor = '#28a745';
+        this.style.transform = 'translateY(0)';
+        this.style.boxShadow = '0 4px 15px rgba(0,0,0,0.2)';
+    });
+    
+    // Style the export quotes button
+    exportQuotesButton.style.cssText = `
+        background: #007bff;
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 6px;
+        font-size: 1em;
+        font-weight: 600;
+        cursor: pointer;
+        display: block;
+        margin: 20px auto;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    `;
+    
+    exportQuotesButton.addEventListener('mouseenter', function() {
+        this.style.backgroundColor = '#0056b3';
+        this.style.transform = 'translateY(-2px)';
+        this.style.boxShadow = '0 6px 20px rgba(0,0,0,0.3)';
+    });
+    
+    exportQuotesButton.addEventListener('mouseleave', function() {
+        this.style.backgroundColor = '#007bff';
         this.style.transform = 'translateY(0)';
         this.style.boxShadow = '0 4px 15px rgba(0,0,0,0.2)';
     });
