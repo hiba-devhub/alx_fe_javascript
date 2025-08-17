@@ -391,7 +391,7 @@ function importFromJsonFile(event) {
 
 // Enhanced function to export quotes as JSON (for backup)
 // Enhanced function to export quotes as JSON (for backup)
-function exportQuotes() {
+function exportToJsonFile() {
     const quotesData = {
         exportDate: new Date().toISOString(),
         exportedBy: "Dynamic Quote Generator",
@@ -494,7 +494,7 @@ function createImportExportControls() {
     
     const exportBtn = document.createElement('button');
     exportBtn.textContent = `Export ${quotes.length} Quotes to JSON`;
-    exportBtn.onclick = exportQuotes;
+    exportBtn.onclick = exportToJsonFile;
     exportBtn.style.cssText = `
         background: #28a745;
         color: white;
@@ -850,7 +850,7 @@ if (typeof module !== 'undefined' && module.exports) {
         loadQuotes,
         saveQuotes,
         clearAllQuotes,
-        exportQuotes,
+        exportQuotes: exportToJsonFile,
         importFromJsonFile,
         createImportExportControls
     };
