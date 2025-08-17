@@ -175,6 +175,7 @@ function showRandomQuote() {
 function addQuote() {
     const newQuoteText = document.getElementById('newQuoteText');
     const newQuoteCategory = document.getElementById('newQuoteCategory');
+    const postToServer = document.getElementById('postToServerCheck');
     
     if (newQuoteText && newQuoteCategory) {
         const quoteText = newQuoteText.value.trim();
@@ -197,9 +198,17 @@ function addQuote() {
             // Show success message
             showSuccessMessage('Quote added successfully!');
             
+            // Post to server if checkbox is checked
+            if (postToServer && postToServer.checked) {
+                postQuoteToServer(newQuote).catch(error => {
+                    console.error('Failed to post quote to server:', error);
+                });
+            }
+            
             // Clear the form inputs
             newQuoteText.value = '';
             newQuoteCategory.value = '';
+            if (postToServer) postToServer.checked = false;
             
             // Display the newly added quote
             showRandomQuote();
@@ -261,11 +270,29 @@ function createAddQuoteForm() {
                     border: 2px solid #ddd;
                     border-radius: 6px;
                     font-size: 1em;
-                    margin-bottom: 20px;
+                    margin-bottom: 15px;
                     box-sizing: border-box;
                     font-family: inherit;
                     transition: border-color 0.3s ease;
                 " />
+                <div style="
+                    margin-bottom: 20px;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    justify-content: center;
+                ">
+                    <input id="postToServerCheck" type="checkbox" style="
+                        width: 18px;
+                        height: 18px;
+                        cursor: pointer;
+                    " />
+                    <label for="postToServerCheck" style="
+                        color: #555;
+                        font-size: 14px;
+                        cursor: pointer;
+                    ">Also post to server (JSONPlaceholder API)</label>
+                </div>
                 <div style="display: flex; gap: 10px; justify-content: center;">
                     <button onclick="addQuote()" style="
                         background: #28a745;
@@ -495,6 +522,260 @@ function fetchQuotesFromServer() {
             }
         }, 1500); // Simulate 1.5 second network delay
     });
+}
+
+// Function to fetch data from JSONPlaceholder API
+async function fetchFromJsonPlaceholder() {
+    try {
+        const response = await fetch('https://jsonplaceholder.typicode.com/posts');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const posts = await response.json();
+        
+        // Convert first 5 posts to quote format
+        const quotesFromPosts = posts.slice(0, 5).map((post, index) => {
+            const categories = ['API', 'JSONPlaceholder', 'Web', 'Data', 'Technology'];
+            return {
+                text: post.title.charAt(0).toUpperCase() + post.title.slice(1) + '.',
+                category: categories[index] || 'API'
+            };
+        });
+        
+        return quotesFromPosts;
+    } catch (error) {
+        console.error('Error fetching from JSONPlaceholder:', error);
+        throw error;
+    }
+}
+
+// Function to post quote data to server using mock API
+async function postQuoteToServer(quote) {
+    try {
+        showSuccessMessage('Posting quote to server...');
+        
+        const response = await fetch('https://jsonplaceholder.typicode.com/posts', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                title: quote.text.substring(0, 50) + (quote.text.length > 50 ? '...' : ''),
+                body: quote.text,
+                userId: Math.floor(Math.random() * 10) + 1,
+                category: quote.category,
+                timestamp: new Date().toISOString()
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log('Quote posted successfully:', result);
+        
+        showSuccessMessage(`Quote posted to server successfully! Server ID: ${result.id}`);
+        return result;
+        
+    } catch (error) {
+        console.error('Error posting quote to server:', error);
+        alert(`Failed to post quote to server: ${error.message}`);
+        throw error;
+    }
+}
+
+// Function to post all quotes to server (bulk operation)
+async function postAllQuotesToServer() {
+    try {
+        if (quotes.length === 0) {
+            alert('No quotes to post to server!');
+            return;
+        }
+
+        const confirmPost = confirm(`Are you sure you want to post all ${quotes.length} quotes to the server?`);
+        if (!confirmPost) return;
+
+        showSuccessMessage(`Posting ${quotes.length} quotes to server...`);
+        
+        const postPromises = quotes.map(async (quote, index) => {
+            // Add small delay between requests to avoid overwhelming the API
+            await new Promise(resolve => setTimeout(resolve, index * 200));
+            
+            return fetch('https://jsonplaceholder.typicode.com/posts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    title: `Quote ${index + 1}: ${quote.text.substring(0, 40)}...`,
+                    body: quote.text,
+                    userId: Math.floor(Math.random() * 10) + 1,
+                    category: quote.category,
+                    timestamp: new Date().toISOString(),
+                    localIndex: index
+                })
+            }).then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            });
+        });
+
+        const results = await Promise.all(postPromises);
+        
+        console.log('All quotes posted successfully:', results);
+        showSuccessMessage(`Successfully posted all ${results.length} quotes to server!`);
+        
+        // Store server IDs for reference
+        const serverMapping = results.map((result, index) => ({
+            localIndex: index,
+            serverId: result.id,
+            quote: quotes[index]
+        }));
+        
+        localStorage.setItem('serverQuoteMapping', JSON.stringify(serverMapping));
+        
+        return results;
+        
+    } catch (error) {
+        console.error('Error posting quotes to server:', error);
+        alert(`Failed to post quotes to server: ${error.message}`);
+        throw error;
+    }
+}
+
+// Function to check server connectivity
+async function checkServerStatus() {
+    try {
+        const response = await fetch('https://jsonplaceholder.typicode.com/posts/1', {
+            method: 'HEAD',
+            timeout: 5000
+        });
+        
+        return response.ok;
+    } catch (error) {
+        console.error('Server connectivity check failed:', error);
+        return false;
+    }
+}
+
+// Function to create server status indicator
+function createServerStatusIndicator() {
+    const statusContainer = document.createElement('div');
+    statusContainer.id = 'serverStatus';
+    statusContainer.style.cssText = `
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-size: 12px;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    `;
+    
+    const statusDot = document.createElement('div');
+    statusDot.id = 'statusDot';
+    statusDot.style.cssText = `
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: #6c757d;
+    `;
+    
+    const statusText = document.createElement('span');
+    statusText.id = 'statusText';
+    statusText.textContent = 'Checking server...';
+    
+    statusContainer.appendChild(statusDot);
+    statusContainer.appendChild(statusText);
+    
+    document.body.appendChild(statusContainer);
+    
+    // Check server status
+    checkServerStatus().then(isOnline => {
+        const dot = document.getElementById('statusDot');
+        const text = document.getElementById('statusText');
+        
+        if (isOnline) {
+            dot.style.backgroundColor = '#28a745';
+            text.textContent = 'Server Online';
+        } else {
+            dot.style.backgroundColor = '#dc3545';
+            text.textContent = 'Server Offline';
+        }
+    });
+    
+    // Update status periodically
+    setInterval(async () => {
+        const isOnline = await checkServerStatus();
+        const dot = document.getElementById('statusDot');
+        const text = document.getElementById('statusText');
+        
+        if (dot && text) {
+            if (isOnline) {
+                dot.style.backgroundColor = '#28a745';
+                text.textContent = 'Server Online';
+            } else {
+                dot.style.backgroundColor = '#dc3545';
+                text.textContent = 'Server Offline';
+            }
+        }
+    }, 30000); // Check every 30 seconds
+}
+
+// Enhanced sync function with real API option
+async function syncWithJsonPlaceholder() {
+    try {
+        showSuccessMessage('Fetching data from https://jsonplaceholder.typicode.com/posts ...');
+        
+        const apiQuotes = await fetchFromJsonPlaceholder();
+        
+        // Get current quotes count before sync
+        const initialCount = quotes.length;
+        
+        // Filter out quotes that already exist (avoid duplicates)
+        const newQuotes = apiQuotes.filter(apiQuote => 
+            !quotes.some(existingQuote => 
+                existingQuote.text === apiQuote.text && 
+                existingQuote.category === apiQuote.category
+            )
+        );
+        
+        if (newQuotes.length > 0) {
+            // Add new quotes from API
+            quotes.push(...newQuotes);
+            saveQuotes();
+            
+            // Update categories dropdown
+            populateCategories();
+            
+            // Update UI buttons
+            const showAllBtn = document.querySelector('[data-action="showAll"]');
+            if (showAllBtn) {
+                showAllBtn.textContent = `Show All Quotes (${quotes.length})`;
+            }
+            
+            showSuccessMessage(`API sync complete! Added ${newQuotes.length} quotes from JSONPlaceholder.`);
+            
+            // Show a random quote to reflect updates
+            showRandomQuote();
+        } else {
+            showSuccessMessage('API sync complete! No new quotes to add.');
+        }
+        
+    } catch (error) {
+        console.error('JSONPlaceholder API sync failed:', error);
+        alert(`Failed to sync with JSONPlaceholder API: ${error.message}`);
+    }
 }
 
 // Function to sync quotes with server (fetch and merge)
@@ -860,11 +1141,65 @@ function createAdditionalControls() {
     
     syncBtn.addEventListener('click', syncQuotesWithServer);
     
+    // JSONPlaceholder API Sync button
+    const apiSyncBtn = document.createElement('button');
+    apiSyncBtn.textContent = 'Sync with API';
+    apiSyncBtn.style.cssText = `
+        background: #28a745;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 1em;
+        font-weight: 500;
+        transition: background-color 0.3s ease;
+        margin-left: 10px;
+    `;
+    
+    apiSyncBtn.addEventListener('mouseenter', function() {
+        this.style.backgroundColor = '#218838';
+    });
+    
+    apiSyncBtn.addEventListener('mouseleave', function() {
+        this.style.backgroundColor = '#28a745';
+    });
+    
+    apiSyncBtn.addEventListener('click', syncWithJsonPlaceholder);
+    
+    // Post to Server button
+    const postBtn = document.createElement('button');
+    postBtn.textContent = 'Post All to Server';
+    postBtn.style.cssText = `
+        background: #dc3545;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 1em;
+        font-weight: 500;
+        transition: background-color 0.3s ease;
+        margin-left: 10px;
+    `;
+    
+    postBtn.addEventListener('mouseenter', function() {
+        this.style.backgroundColor = '#c82333';
+    });
+    
+    postBtn.addEventListener('mouseleave', function() {
+        this.style.backgroundColor = '#dc3545';
+    });
+    
+    postBtn.addEventListener('click', postAllQuotesToServer);
+    
     controlsContainer.appendChild(addQuoteBtn);
     controlsContainer.appendChild(showAllBtn);
     controlsContainer.appendChild(clearBtn);
     controlsContainer.appendChild(importExportBtn);
     controlsContainer.appendChild(syncBtn);
+    controlsContainer.appendChild(apiSyncBtn);
+    controlsContainer.appendChild(postBtn);
     
     // Insert after the new quote button
     newQuoteButton.parentNode.insertBefore(controlsContainer, newQuoteButton.nextSibling);
@@ -1132,6 +1467,9 @@ document.addEventListener('DOMContentLoaded', function() {
         this.style.transform = 'translateY(0)';
         this.style.boxShadow = '0 4px 15px rgba(0,0,0,0.1)';
     });
+    
+    // Initialize server status indicator
+    createServerStatusIndicator();
 });
 
 // Export functions for testing (if needed)
@@ -1152,6 +1490,9 @@ if (typeof module !== 'undefined' && module.exports) {
         saveSelectedCategory,
         loadSelectedCategory,
         fetchQuotesFromServer,
-        syncQuotesWithServer
+        syncQuotesWithServer,
+        postQuoteToServer,
+        postAllQuotesToServer,
+        checkServerStatus
     };
 }
