@@ -23,6 +23,16 @@ function saveQuotes() {
     localStorage.setItem('quotes', JSON.stringify(quotes));
 }
 
+// Function to save selected category filter to local storage
+function saveSelectedCategory(category) {
+    localStorage.setItem('selectedCategory', category);
+}
+
+// Function to load selected category filter from local storage
+function loadSelectedCategory() {
+    return localStorage.getItem('selectedCategory') || 'all';
+}
+
 // Initialize quotes array from local storage or use defaults
 let quotes = loadQuotes();
 
@@ -31,12 +41,64 @@ const quoteDisplay = document.getElementById('quoteDisplay');
 const newQuoteButton = document.getElementById('newQuote');
 const exportQuotesButton = document.getElementById('exportQuotes');
 const importFileInput = document.getElementById('importFile');
+const categoryFilter = document.getElementById('categoryFilter');
 
-// Function to show a random quote
-function showRandomQuote() {
-    // Get a random index from the quotes array
-    const randomIndex = Math.floor(Math.random() * quotes.length);
-    const randomQuote = quotes[randomIndex];
+// Function to populate categories dynamically
+function populateCategories() {
+    // Extract unique categories from quotes array
+    const categories = [...new Set(quotes.map(quote => quote.category))];
+    
+    // Clear existing options except "All Categories"
+    categoryFilter.innerHTML = '<option value="all">All Categories</option>';
+    
+    // Add unique categories to the dropdown
+    categories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category;
+        option.textContent = category;
+        categoryFilter.appendChild(option);
+    });
+    
+    // Restore last selected category
+    const selectedCategory = loadSelectedCategory();
+    categoryFilter.value = selectedCategory;
+}
+
+// Function to filter quotes based on selected category
+function filterQuotes() {
+    const selectedCategory = categoryFilter.value;
+    
+    // Save the selected category to local storage
+    saveSelectedCategory(selectedCategory);
+    
+    let filteredQuotes = quotes;
+    
+    // Filter quotes if not "all" categories
+    if (selectedCategory !== 'all') {
+        filteredQuotes = quotes.filter(quote => quote.category === selectedCategory);
+    }
+    
+    // If no quotes match the filter, show a message
+    if (filteredQuotes.length === 0) {
+        quoteDisplay.innerHTML = `
+            <div style="
+                background: #f8f9fa;
+                border: 2px solid #dee2e6;
+                border-radius: 8px;
+                padding: 20px;
+                margin: 20px 0;
+                text-align: center;
+                color: #6c757d;
+            ">
+                <p style="margin: 0; font-size: 1.1em;">No quotes found for category "${selectedCategory}"</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Display a random quote from filtered quotes
+    const randomIndex = Math.floor(Math.random() * filteredQuotes.length);
+    const randomQuote = filteredQuotes[randomIndex];
     
     // Clear previous content
     quoteDisplay.innerHTML = '';
@@ -103,6 +165,12 @@ function showRandomQuote() {
     }, 10);
 }
 
+// Enhanced function to show a random quote (respects current filter)
+function showRandomQuote() {
+    // Use filterQuotes to respect current category selection
+    filterQuotes();
+}
+
 // Function to add a quote (as specified in the task requirements)
 function addQuote() {
     const newQuoteText = document.getElementById('newQuoteText');
@@ -122,6 +190,9 @@ function addQuote() {
             
             // Save quotes to local storage
             saveQuotes();
+            
+            // Update categories dropdown if new category was added
+            populateCategories();
             
             // Show success message
             showSuccessMessage('Quote added successfully!');
@@ -288,6 +359,12 @@ function clearAllQuotes() {
         quotes.length = 0; // Clear the array
         quotes.push(...defaultQuotes); // Add default quotes back
         saveQuotes();
+        
+        // Reset categories and filter
+        populateCategories();
+        categoryFilter.value = 'all';
+        saveSelectedCategory('all');
+        
         showSuccessMessage('Quotes reset to defaults!');
         
         // Update the show all quotes button count
@@ -356,6 +433,9 @@ function importFromJsonFile(event) {
             const initialCount = quotes.length;
             quotes.push(...validQuotes);
             saveQuotes();
+            
+            // Update categories dropdown with any new categories
+            populateCategories();
             
             // Show success message
             const importedCount = validQuotes.length;
@@ -692,12 +772,20 @@ function createAdditionalControls() {
     newQuoteButton.parentNode.insertBefore(controlsContainer, newQuoteButton.nextSibling);
 }
 
-// Function to show all quotes
+// Function to show all quotes (respects current filter)
 function showAllQuotes() {
     const existingAll = document.getElementById('allQuotesContainer');
     if (existingAll) {
         existingAll.remove();
         return;
+    }
+    
+    const selectedCategory = categoryFilter.value;
+    let displayQuotes = quotes;
+    
+    // Filter quotes if not "all" categories
+    if (selectedCategory !== 'all') {
+        displayQuotes = quotes.filter(quote => quote.category === selectedCategory);
     }
     
     const allQuotesContainer = document.createElement('div');
@@ -713,40 +801,50 @@ function showAllQuotes() {
     `;
     
     const title = document.createElement('h3');
-    title.textContent = 'All Quotes';
+    const titleText = selectedCategory === 'all' 
+        ? 'All Quotes' 
+        : `Quotes in "${selectedCategory}" Category`;
+    title.textContent = titleText;
     title.style.cssText = 'text-align: center; color: #333; margin-bottom: 20px;';
     
     allQuotesContainer.appendChild(title);
     
-    quotes.forEach((quote, index) => {
-        const quoteItem = document.createElement('div');
-        quoteItem.style.cssText = `
-            background: white;
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 6px;
-            border-left: 4px solid #007bff;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        `;
-        
-        const quoteText = document.createElement('p');
-        quoteText.textContent = `"${quote.text}"`;
-        quoteText.style.cssText = 'margin: 0 0 8px 0; font-style: italic;';
-        
-        const quoteCategory = document.createElement('small');
-        quoteCategory.textContent = quote.category;
-        quoteCategory.style.cssText = `
-            background: #007bff;
-            color: white;
-            padding: 3px 8px;
-            border-radius: 10px;
-            font-size: 0.8em;
-        `;
-        
-        quoteItem.appendChild(quoteText);
-        quoteItem.appendChild(quoteCategory);
-        allQuotesContainer.appendChild(quoteItem);
-    });
+    if (displayQuotes.length === 0) {
+        const noQuotesMsg = document.createElement('p');
+        noQuotesMsg.textContent = `No quotes found in "${selectedCategory}" category.`;
+        noQuotesMsg.style.cssText = 'text-align: center; color: #6c757d; font-style: italic;';
+        allQuotesContainer.appendChild(noQuotesMsg);
+    } else {
+        displayQuotes.forEach((quote, index) => {
+            const quoteItem = document.createElement('div');
+            quoteItem.style.cssText = `
+                background: white;
+                padding: 15px;
+                margin: 10px 0;
+                border-radius: 6px;
+                border-left: 4px solid #007bff;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            `;
+            
+            const quoteText = document.createElement('p');
+            quoteText.textContent = `"${quote.text}"`;
+            quoteText.style.cssText = 'margin: 0 0 8px 0; font-style: italic;';
+            
+            const quoteCategory = document.createElement('small');
+            quoteCategory.textContent = quote.category;
+            quoteCategory.style.cssText = `
+                background: #007bff;
+                color: white;
+                padding: 3px 8px;
+                border-radius: 10px;
+                font-size: 0.8em;
+            `;
+            
+            quoteItem.appendChild(quoteText);
+            quoteItem.appendChild(quoteCategory);
+            allQuotesContainer.appendChild(quoteItem);
+        });
+    }
     
     const closeBtn = document.createElement('button');
     closeBtn.textContent = 'Close';
@@ -786,6 +884,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Set up event listener for the export quotes button
     exportQuotesButton.addEventListener('click', exportToJsonFile);
+    
+    // Populate categories dropdown
+    populateCategories();
+    
+    // Set up event listener for category filter
+    categoryFilter.addEventListener('change', filterQuotes);
     
     // Create additional controls
     createAdditionalControls();
@@ -900,6 +1004,36 @@ document.addEventListener('DOMContentLoaded', function() {
         this.style.transform = 'translateY(0)';
         this.style.boxShadow = '0 4px 15px rgba(0,0,0,0.1)';
     });
+    
+    // Style the category filter dropdown
+    categoryFilter.style.cssText = `
+        background: #ffffff;
+        color: #333;
+        padding: 12px 16px;
+        border: 2px solid #17a2b8;
+        border-radius: 6px;
+        font-size: 1em;
+        font-weight: 500;
+        cursor: pointer;
+        display: block;
+        margin: 20px auto;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        min-width: 200px;
+        max-width: 300px;
+    `;
+    
+    categoryFilter.addEventListener('mouseenter', function() {
+        this.style.borderColor = '#138496';
+        this.style.transform = 'translateY(-2px)';
+        this.style.boxShadow = '0 6px 20px rgba(0,0,0,0.15)';
+    });
+    
+    categoryFilter.addEventListener('mouseleave', function() {
+        this.style.borderColor = '#17a2b8';
+        this.style.transform = 'translateY(0)';
+        this.style.boxShadow = '0 4px 15px rgba(0,0,0,0.1)';
+    });
 });
 
 // Export functions for testing (if needed)
@@ -914,6 +1048,10 @@ if (typeof module !== 'undefined' && module.exports) {
         clearAllQuotes,
         exportQuotes: exportToJsonFile,
         importFromJsonFile,
-        createImportExportControls
+        createImportExportControls,
+        populateCategories,
+        filterQuotes,
+        saveSelectedCategory,
+        loadSelectedCategory
     };
 }

@@ -2,7 +2,7 @@
   "exportDate": "2025-08-17T12:00:00.000Z",
   "exportedBy": "Dynamic Quote Generator",
   "version": "1.0",
-  "quotesCount": 5,
+  "quotesCount": 8,
   "quotes": [
     {
       "text": "The best time to plant a tree was 20 years ago. The second best time is now.",
@@ -23,6 +23,18 @@
     {
       "text": "Dream it. Wish it. Do it.",
       "category": "Action"
+    },
+    {
+      "text": "Innovation distinguishes between a leader and a follower.",
+      "category": "Innovation"
+    },
+    {
+      "text": "The journey of a thousand miles begins with one step.",
+      "category": "Journey"
+    },
+    {
+      "text": "Success is not final, failure is not fatal: it is the courage to continue that counts.",
+      "category": "Courage"
     }
   ]
 }
