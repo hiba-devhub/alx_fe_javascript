@@ -1,0 +1,28 @@
+{
+  "exportDate": "2025-08-17T12:00:00.000Z",
+  "exportedBy": "Dynamic Quote Generator",
+  "version": "1.0",
+  "quotesCount": 5,
+  "quotes": [
+    {
+      "text": "The best time to plant a tree was 20 years ago. The second best time is now.",
+      "category": "Wisdom"
+    },
+    {
+      "text": "Your limitation—it's only your imagination.",
+      "category": "Motivation"
+    },
+    {
+      "text": "Push yourself, because no one else is going to do it for you.",
+      "category": "Self-Improvement"
+    },
+    {
+      "text": "Great things never come from comfort zones.",
+      "category": "Growth"
+    },
+    {
+      "text": "Dream it. Wish it. Do it.",
+      "category": "Action"
+    }
+  ]
+}
