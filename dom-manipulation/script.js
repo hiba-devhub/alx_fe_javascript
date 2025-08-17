@@ -810,12 +810,12 @@ async function syncQuotesWithServer() {
                 showAllBtn.textContent = `Show All Quotes (${quotes.length})`;
             }
             
-            showSuccessMessage(`Sync complete! Added ${newQuotes.length} new quotes from server.`);
+            showSuccessMessage(`Quotes synced with server! Added ${newQuotes.length} new quotes.`);
             
             // Show a random quote to reflect updates
             showRandomQuote();
         } else {
-            showSuccessMessage('Sync complete! No new quotes to add.');
+            showSuccessMessage('Quotes synced with server!');
         }
         
     } catch (error) {
